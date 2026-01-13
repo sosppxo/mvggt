@@ -43,17 +43,12 @@ We propose the **Multimodal Visual Geometry Grounded Transformer (MVGGT)**, an e
   <em>Figure 1: Comparison of the proposed MV-3DRES task (bottom) against the traditional two-stage pipeline (top).</em>
 </div>
 
-## 🖼️ Qualitative Visualization
+## 🚀 Method: MVGGT
 
-MVGGT is capable of reconstructing scene geometry and segmenting the target object directly from sparse views.
+We propose the **Multimodal Visual Geometry Grounded Transformer (MVGGT)**, an end-to-end framework designed for efficiency and robustness.
 
-<div align="center">
-  <img src="https://sosppxo.github.io/mvggt.github.io/resources/figure4.png" width="100%">
-  <br>
-  <em>Overview of the MVGGT Framework.</em>
-</div>
-
-<br>
+![MVGGT Architecture](https://sosppxo.github.io/mvggt.github.io/resources/figure3.png)
+*Figure 2: Architecture of MVGGT. It features a Frozen Reconstruction Branch (top) and a Trainable Multimodal Branch (bottom).*
 
 > **Note:** For interactive 3D visualizations and video comparisons with other methods, please visit our [**Project Page**](https://sosppxo.github.io/mvggt.github.io/).
 
