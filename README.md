@@ -48,7 +48,7 @@ We propose the **Multimodal Visual Geometry Grounded Transformer (MVGGT)**, an e
 MVGGT is capable of reconstructing scene geometry and segmenting the target object directly from sparse views.
 
 <div align="center">
-  <img src="https://sosppxo.github.io/mvggt.github.io/resources/figure3.png" width="100%">
+  <img src="https://sosppxo.github.io/mvggt.github.io/resources/figure4.png" width="100%">
   <br>
   <em>Overview of the MVGGT Framework.</em>
 </div>
