@@ -1,0 +1,46 @@
+# @package _global_
+
+trainer: trainers.mvggt_trainer.MVGGTTrainer
+
+train:
+  image_num_range: [4, 4]
+  max_img_per_gpu: 64
+
+  # low resolution
+  resolution: 
+    - [224, 224]
+
+  num_epoch: 30
+  iters_per_epoch: 1000
+  print_freq: 10
+  clip_loss: 1000
+  optimizer:
+    lr: 1e-4
+  eval_only: false
+  # resume: ckpts/best_model
+test:
+    num_workers: 8
+    batch_size: 1
+    print_freq: 10
+    iters_per_test: -1
+    image_num_range: [8, 8]
+    # low resolution
+    resolution: 
+    - [518, 336]
+
+model:
+  use_referring_segmentation: true
+  freeze_visual_modules: true
+  pretrained_model_name_or_path: ckpts/Pi3
+loss:
+  train_loss:
+    use_referring_segmentation: true
+    referring_loss_weight_dict:
+      loss_mask: 1.0
+      loss_dice: 1.0
+
+  test_loss:
+    use_referring_segmentation: true
+    referring_loss_weight_dict:
+      loss_mask: 1.0
+      loss_dice: 1.0

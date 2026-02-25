@@ -245,42 +245,10 @@ class CameraLoss(nn.Module):
 # Final Loss
 # ---------------------------------------------------------------------------
 
-def dice_loss_global(
-    inputs: torch.Tensor,
-    targets: torch.Tensor,
-    num_masks: float,
-    eps=1e-6,
-):
-    """
-    Compute the DICE loss, similar to generalized IOU for masks
-    Args:
-        inputs: A float tensor of arbitrary shape.
-                The predictions for each example.
-        targets: A float tensor with the same shape as inputs. Stores the binary
-                 classification label for each element in inputs
-                (0 for the negative class and 1 for the positive class).
-    """
-    inputs = inputs.sigmoid()
-    inputs = inputs.flatten(1)
-    targets = targets.flatten(1)
-    numerator = 2 * (inputs * targets).sum(-1)
-    denominator = inputs.sum(-1) + targets.sum(-1)
-    loss = 1 - (numerator + eps) / (denominator + eps)
-    return loss
-
-
 def dice_loss(
     inputs: torch.Tensor,
     targets: torch.Tensor,
-    num_masks: float,
     eps=1e-6,
-    mode: str = 'perview',
-    suppress_no_target: bool = True,
-    add_global_loss_weight: float = 0.0,
-    anneal_global_loss: bool = False,
-    current_epoch: int = None,
-    total_epochs: int = None,
-    only_target=False,
 ):
     """
     Compute the DICE loss with various strategies.
@@ -290,61 +258,33 @@ def dice_loss(
         targets: A float tensor with the same shape as inputs. Stores the binary
                  classification label for each element in inputs
                 (0 for the negative class and 1 for the positive class).
-        mode: 'global' or 'perview'. The primary loss calculation method.
-        suppress_no_target: If True and mode is 'perview', down-weights views with no target mask.
-        add_global_loss_weight: If > 0, adds a global dice loss component to the per-view loss.
-        anneal_global_loss: If True, adds a global loss component with weight annealed from 0 to 1 over epochs.
     """
-    if mode == 'global':
-        return dice_loss_global(inputs, targets, num_masks, eps).mean()
+    inputs_sig = inputs.sigmoid()
     
-    if mode == 'perview':
-        inputs_sig = inputs.sigmoid()
-        
-        # Per-view loss calculation
-        inputs_flat = inputs_sig.flatten(2)  # (B, V, H*W)
-        targets_flat = targets.flatten(2)  # (B, V, H*W)
-        numerator = 2 * (inputs_flat * targets_flat).sum(-1)  # (B, V)
-        denominator = inputs_flat.sum(-1) + targets_flat.sum(-1)  # (B, V)
-        per_view_loss = 1 - (numerator + eps) / (denominator + eps)  # (B, V)
+    # Per-view loss calculation
+    inputs_flat = inputs_sig.flatten(2)  # (B, V, H*W)
+    targets_flat = targets.flatten(2)  # (B, V, H*W)
+    numerator = 2 * (inputs_flat * targets_flat).sum(-1)  # (B, V)
+    denominator = inputs_flat.sum(-1) + targets_flat.sum(-1)  # (B, V)
+    per_view_loss = 1 - (numerator + eps) / (denominator + eps)  # (B, V)
 
-        if suppress_no_target:
-            weights = torch.ones_like(per_view_loss)
-            no_target_mask = (targets_flat.sum(-1) == 0)
-            
-            if no_target_mask.any():
-                num_no_target_per_item = no_target_mask.sum(dim=1, keepdim=True)
-                
-                if only_target:
-                    weights_for_no_target = torch.zeros_like(num_no_target_per_item)
-                else:
-                    weights_for_no_target = 1.0 / torch.clamp(num_no_target_per_item, min=1)
-                
-                weights = torch.where(no_target_mask, weights_for_no_target, weights)
-            
-            per_view_loss = per_view_loss * weights
-        
-        final_loss = per_view_loss.mean()
-
-        if add_global_loss_weight > 0:
-            global_loss = dice_loss_global(inputs, targets, num_masks, eps).mean()
-            final_loss += add_global_loss_weight * global_loss
-        elif anneal_global_loss:
-            if current_epoch is not None and total_epochs is not None and total_epochs > 0:
-                anneal_weight = current_epoch / total_epochs
-                global_loss = dice_loss_global(inputs, targets, num_masks, eps).mean()
-                final_loss += anneal_weight * global_loss 
-        
-        return final_loss
-
-    raise ValueError(f"Unknown dice_loss mode: {mode}")
+    weights = torch.ones_like(per_view_loss)
+    no_target_mask = (targets_flat.sum(-1) == 0)
+    if no_target_mask.any():
+        num_no_target_per_item = no_target_mask.sum(dim=1, keepdim=True)
+        weights_for_no_target = 1.0 / torch.clamp(num_no_target_per_item, min=1)
+        weights = torch.where(no_target_mask, weights_for_no_target, weights)
+    per_view_loss = per_view_loss * weights
+    
+    final_loss = per_view_loss.mean()
+    
+    return final_loss
 
 
 def iou_score(
     inputs: torch.Tensor,
     targets: torch.Tensor,
     eps=1e-6,
-    only_target=True,
 ):
     """
     Compute the IoU score
@@ -364,16 +304,8 @@ def iou_score(
     numerator = (inputs * targets).sum(-1)  # (B, V)
     denominator = inputs.sum(-1) + targets.sum(-1) - numerator  # (B, V)
     score = (numerator + eps) / (denominator + eps)  # (B, V)
-
-    if only_target:
-        # Only keep views with targets
-        score = score * (targets.sum(-1) > 0).float() # (B, V)
-        # Compute IoU score for views with targets, note that some samples may have no targets
-        # score = score.sum(-1) / (targets.sum(-1) > 0).float().sum(-1) # (B)
-        # If all views have no targets, score is 0; otherwise compute IoU score directly
-        score = torch.where((targets.sum(-1) > 0).float().sum(-1) > 0, score.sum(-1) / (targets.sum(-1) > 0).float().sum(-1), torch.zeros_like(score[:, 0])) # (B)
-
-    
+    score = score * (targets.sum(-1) > 0).float() # (B, V)
+    score = torch.where((targets.sum(-1) > 0).float().sum(-1) > 0, score.sum(-1) / (targets.sum(-1) > 0).float().sum(-1), torch.zeros_like(score[:, 0])) # (B)
     return score.mean()
 
 
@@ -432,71 +364,19 @@ def iou_score_per_view(
     """
     inputs = inputs.sigmoid()
     inputs = (inputs > 0.5).float()  # (B, V, H, W)
-
     # flatten H, W
     inputs_flat = inputs.flatten(2)  # (B, V, H*W)
     targets_flat = targets.flatten(2)  # (B, V, H*W)
-
     numerator = (inputs_flat * targets_flat).sum(-1)  # (B, V)
     denominator = inputs_flat.sum(-1) + targets_flat.sum(-1) - numerator  # (B, V)
-
     score_per_view = (numerator + eps) / (denominator + eps)  # (B, V)
     return score_per_view
 
-
-def iou_score_per_view_avg(
-    inputs: torch.Tensor,
-    targets: torch.Tensor,
-    eps=1e-6,
-):
-    """
-    Computes IoU for each view, then averages over views for each sample in the batch.
-    Only views with a ground truth mask are considered in the average.
-    Returns a tensor of shape (B,).
-    """
-    inputs = inputs.sigmoid()
-    inputs = (inputs > 0.5).float()  # (B, V, H, W)
-
-    # flatten H, W
-    inputs_flat = inputs.flatten(2)  # (B, V, H*W)
-    targets_flat = targets.flatten(2)  # (B, V, H*W)
-
-    numerator = (inputs_flat * targets_flat).sum(-1)  # (B, V)
-    denominator = inputs_flat.sum(-1) + targets_flat.sum(-1) - numerator  # (B, V)
-
-    score_per_view = (numerator + eps) / (denominator + eps)  # (B, V)
-
-    # We should only average over views that have a target mask.
-    has_target = targets_flat.sum(-1) > 0  # (B, V)
-
-    # Sum scores only for views with targets
-    sum_scores_per_sample = (score_per_view * has_target.float()).sum(dim=-1)  # (B,)
-
-    # Count number of views with targets for each sample
-    num_views_with_target = has_target.sum(dim=-1)  # (B,)
-
-    # Average score per sample. Use clamp to avoid division by zero.
-    # If a sample has 0 views with target, score is 0.
-    avg_score_per_sample = sum_scores_per_sample / torch.clamp(num_views_with_target.float(), min=1.0)  # (B,)
-
-    return avg_score_per_sample
-
-
 class ReferringMaskLoss(nn.Module):
-    def __init__(self, weight_dict=None, layer_weight=0.5, 
-                 dice_loss_mode='perview', 
-                 perview_suppress_no_target=True, 
-                 add_global_loss_weight=0.0, 
-                 anneal_global_loss=False, 
-                 only_target=False):
+    def __init__(self, weight_dict=None, layer_weight=0.5,):
         super().__init__()
         self.weight_dict = weight_dict if weight_dict is not None else {'loss_mask': 1, 'loss_dice': 1}
         self.layer_weight = layer_weight
-        self.dice_loss_mode = dice_loss_mode
-        self.perview_suppress_no_target = perview_suppress_no_target
-        self.add_global_loss_weight = add_global_loss_weight
-        self.anneal_global_loss = anneal_global_loss
-        self.only_target = only_target
 
     def forward(self, pred, gt, current_epoch=None, total_epochs=None):
         pred_masks = pred['referring_mask_pred']
@@ -505,112 +385,54 @@ class ReferringMaskLoss(nn.Module):
         num_masks = gt_masks.shape[0] * gt_masks.shape[1]
 
         losses = {}
-        # Compute loss for the final layer
-        if self.only_target: # Only supervise views with targets
-            bce_loss = F.binary_cross_entropy_with_logits(pred_masks, gt_masks.float(), reduction='none')
-            has_target = (gt_masks.sum(dim=(-1, -2), keepdim=True) > 0).float() # (B, V, 1, 1)
-            
-            bce_loss = (bce_loss * has_target).sum() / (has_target.sum() * pred_masks.shape[-1] * pred_masks.shape[-2] + 1e-8)
-            losses["loss_mask"] = bce_loss
-        else:
-            losses["loss_mask"] = F.binary_cross_entropy_with_logits(pred_masks, gt_masks.float())
-        losses["loss_dice"] = dice_loss(
-            pred_masks, gt_masks, num_masks, 
-            mode=self.dice_loss_mode, 
-            suppress_no_target=self.perview_suppress_no_target,
-            add_global_loss_weight=self.add_global_loss_weight,
-            anneal_global_loss=self.anneal_global_loss,
-            current_epoch=current_epoch,
-            total_epochs=total_epochs,
-            only_target=self.only_target
-        )
+        losses["loss_mask"] = F.binary_cross_entropy_with_logits(pred_masks, gt_masks.float())
+        losses["loss_dice"] = dice_loss(pred_masks, gt_masks)
         losses["iou_score"] = iou_score_global(pred_masks, gt_masks)
-        # Calculate per-sample IoUs but do not add them to the main `losses` dict to avoid issues with MetricLogger in training loop.
         iou_global_per_sample = iou_score_global_per_sample(pred_masks, gt_masks)
-        iou_per_view_avg = iou_score_per_view_avg(pred_masks, gt_masks)
         iou_per_view = iou_score_per_view(pred_masks, gt_masks)
         # iou score just in frame with target
         losses["iou_score_in_frame_with_target"] = iou_score(pred_masks, gt_masks)
         total_loss = self.weight_dict['loss_mask'] * losses['loss_mask'] + self.weight_dict['loss_dice'] * losses['loss_dice']
-        # Record the ratio of samples with no targets, i.e., samples where all views have no targets
+        # Record the proportion of samples without a target, i.e., the proportion of samples where all views have no target.
         view_has_target = (gt_masks.sum(dim=(-1, -2)) > 0).float() # (B, V)
         sample_no_target = (view_has_target.sum(-1) == 0).float() # (B)
         losses["rate_no_target"] = sample_no_target.mean()
 
-        # Record the ratio of frames with targets / total frames for each sample, then average
+        # Record the average ratio of frames with a target to the total number of frames in each sample.
         view_has_target = gt_masks.sum(dim=(-1, -2)) > 0 # (B, V)
         rate_view_has_target = view_has_target.float().mean(-1) # (B)
         losses["rate_frame_with_target"] = rate_view_has_target.mean()
 
-        # Record the pixel ratio of targets in each sample
+        # Record the pixel proportion of the target in each sample.
         pixel_rate_per_view = gt_masks.float().mean(dim=(-1, -2)) # (B, V)
         losses["rate_pixel_with_target"] = pixel_rate_per_view.mean()
 
-        # Record the average pixel ratio of targets in frames with targets
+        # Record the average pixel proportion of the target in frames that contain the target.
         if view_has_target.any():
             rate_pixel_in_target_frame = pixel_rate_per_view[view_has_target].mean()
         else:
             rate_pixel_in_target_frame = torch.tensor(0.0, device=gt_masks.device)
         losses["rate_pixel_in_target_frame"] = rate_pixel_in_target_frame
-        # If there are intermediate layer predictions, compute intermediate layer losses
+        # If there are prediction results for intermediate layers, calculate their losses.
         if 'layer_referring_mask_preds' in pred:
             layer_preds = pred['layer_referring_mask_preds']
             layer_losses = {}
-            
-            # # Compute loss for each layer
-            # intermediate_loss = 0.0
-            # if len(layer_preds) > 0:
-            #     for i, layer_pred in enumerate(layer_preds):
-            #         if self.only_target:
-            #             bce_loss = F.binary_cross_entropy_with_logits(layer_pred, gt_masks.float(), reduction='none')
-            #             has_target = (gt_masks.sum(dim=(-1, -2), keepdim=True) > 0).float()
-            #             bce_loss = (bce_loss * has_target).sum() / (has_target.sum() * layer_pred.shape[-1] * layer_pred.shape[-2] + 1e-8)
-            #             layer_losses[f"loss_mask_layer_{i}"] = bce_loss
-            #         else:
-            #             layer_losses[f"loss_mask_layer_{i}"] = F.binary_cross_entropy_with_logits(layer_pred, gt_masks.float())
-            #         layer_losses[f"loss_dice_layer_{i}"] = dice_loss(layer_pred, gt_masks, num_masks, use_global_loss=self.use_global_loss, only_target=self.only_target)
-            #         layer_losses[f"iou_score_layer_{i}"] = iou_score_global(layer_pred, gt_masks)
-
-            #         # Accumulate loss for each intermediate layer
-            #         intermediate_loss += (
-            #             self.weight_dict['loss_mask'] * layer_losses[f"loss_mask_layer_{i}"] + 
-            #             self.weight_dict['loss_dice'] * layer_losses[f"loss_dice_layer_{i}"]
-            #         )
-                
-            #     # Compute average loss and add to total loss
-            #     total_loss += intermediate_loss / len(layer_preds)
-            # Compute loss for each layer
             for i, layer_pred in enumerate(layer_preds):
-                if self.only_target:
-                    bce_loss = F.binary_cross_entropy_with_logits(layer_pred, gt_masks.float(), reduction='none')
-                    has_target = (gt_masks.sum(dim=(-1, -2), keepdim=True) > 0).float()
-                    bce_loss = (bce_loss * has_target).sum() / (has_target.sum() * layer_pred.shape[-1] * layer_pred.shape[-2] + 1e-8)
-                    layer_losses[f"loss_mask_layer_{i}"] = bce_loss
-                else:
-                    layer_losses[f"loss_mask_layer_{i}"] = F.binary_cross_entropy_with_logits(layer_pred, gt_masks.float())
-                layer_losses[f"loss_dice_layer_{i}"] = dice_loss(
-                    layer_pred, gt_masks, num_masks, 
-                    mode=self.dice_loss_mode, 
-                    suppress_no_target=self.perview_suppress_no_target,
-                    add_global_loss_weight=self.add_global_loss_weight,
-                    anneal_global_loss=self.anneal_global_loss,
-                    current_epoch=current_epoch,
-                    total_epochs=total_epochs,
-                    only_target=self.only_target
-                )
+                layer_losses[f"loss_mask_layer_{i}"] = F.binary_cross_entropy_with_logits(layer_pred, gt_masks.float())
+                layer_losses[f"loss_dice_layer_{i}"] = dice_loss(layer_pred, gt_masks)
                 layer_losses[f"iou_score_layer_{i}"] = iou_score_global(layer_pred, gt_masks)
 
-                # Add intermediate layer loss to total loss, multiplied by weight coefficient
+                # Add intermediate layer losses to the total loss, multiplied by a weight coefficient.
                 total_loss += self.layer_weight * (
                     self.weight_dict['loss_mask'] * layer_losses[f"loss_mask_layer_{i}"] + 
                     self.weight_dict['loss_dice'] * layer_losses[f"loss_dice_layer_{i}"]
                 )
             
-            # Add intermediate layer losses to details
+            # Add intermediate layer losses to details.
             losses.update(layer_losses)
         
+        # Save detached versions of all losses for logging
         details = {f"refer_{k}": v.detach() for k, v in losses.items()}
-        details['refer_iou_score_per_sample'] = iou_per_view_avg.detach()
         details['refer_iou_score_global_per_sample'] = iou_global_per_sample.detach()
         details['refer_iou_per_view'] = iou_per_view.detach()
         return total_loss, details
@@ -622,11 +444,6 @@ class MVGGTLoss(nn.Module):
         use_referring_segmentation=False,
         referring_loss_weight_dict=None,
         referring_layer_weight=0.5,
-        dice_loss_mode='perview',
-        perview_suppress_no_target=True,
-        add_global_loss_weight=0.0,
-        anneal_global_loss=False,
-        only_target=False,
     ):
         super().__init__()
         self.point_loss = PointLoss(train_conf=train_conf)
@@ -636,11 +453,6 @@ class MVGGTLoss(nn.Module):
             self.referring_mask_loss = ReferringMaskLoss(
                 weight_dict=referring_loss_weight_dict,
                 layer_weight=referring_layer_weight,
-                dice_loss_mode=dice_loss_mode,
-                perview_suppress_no_target=perview_suppress_no_target,
-                add_global_loss_weight=add_global_loss_weight,
-                anneal_global_loss=anneal_global_loss,
-                only_target=only_target
             )
 
     def prepare_gt(self, gt):

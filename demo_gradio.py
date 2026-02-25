@@ -602,13 +602,11 @@ if __name__ == '__main__':
 
     print("Initializing and loading MVGGT model...")
     
-    ckpt_path = '/data/3D_data/wcl/MVGGT/best_model/pytorch_model.bin'
+    ckpt_path = 'ckpts/best/pytorch_model.bin'
     model = MVGGT(
-        use_referring_segmentation=True, 
-        load_vggt=False, 
+        use_referring_segmentation=True,
         train_conf=True, 
         ckpt=ckpt_path,
-        use_pretrained_weights=False
     )
 
     print(f"Loading checkpoint from {ckpt_path}...")

@@ -1,0 +1,16 @@
+# @package _global_
+
+trainer: trainers.mvggt_trainer.MVGGTTrainer
+
+train:
+  image_num_range: [2, 24]     # hres
+  max_img_per_gpu: 64             # hres
+  # image_num_range: [50, 100]     # hres
+  # max_img_per_gpu: 512             # hres
+
+  # low resolution
+  resolution: 
+    - [224, 224]
+
+model:
+  ckpt: null # <path-to-your-pretrain-checkpoint>

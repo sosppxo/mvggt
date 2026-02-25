@@ -23,8 +23,8 @@
 
 This repository is the official implementation of **MVGGT**. We are currently preparing the code and data for release. Please stay tuned!
 
-- [ ] **Release the MVRefer Benchmark** (Dataset & Evaluation scripts).
-- [ ] **Release Training & Inference Code**.
+- [x] **Release the MVRefer Benchmark** (Dataset & Evaluation scripts).
+- [x] **Release Training & Inference Code**.
 - [x] **Release Pre-trained Models**.
 - [x] **Release Interactive Demo Code** (Local version).
 
@@ -53,9 +53,7 @@ We propose the **Multimodal Visual Geometry Grounded Transformer (MVGGT)**, an e
 
 > **Note:** For interactive 3D visualizations and video comparisons with other methods, please visit our [**Project Page**](https://sosppxo.github.io/mvggt.github.io/).
 
-## 🚀 Demo Deployment
-
-Follow these steps to deploy the interactive demo locally:
+## 🛠️ Installation
 
 ### 1. Clone the repository
 
@@ -74,6 +72,103 @@ conda activate mvggt
 ```
 
 ### 3. Install dependencies
+Install the full requirements for training:
+```bash
+pip install -r requirements.txt
+```
+
+## 📂 Data Preparation
+
+### 1. ScanNet dataset
+Download the [ScanNet](http://www.scan-net.org/) dataset. The data should be organized as follows:
+
+```text
+[data_root]/
+|   └──scene0000_00/
+│       ├── color/              # RGB images (.jpg)
+│       ├── depth/              # Depth maps (.png)
+│       ├── intrinsic/          # intrinsic_depth.txt
+│       └── pose/               # Camera poses (.txt)
+└── scans/                  # Required for 2D instance masks
+    └── scene0000_00/
+        └── scene0000_00_2d-instance-filt/
+            └── instance-filt/  # 2D instance segmentation masks (.png)
+```
+⚠️ Note: Remember to update the data_root path for both train_dataset and test_dataset in configs/data/example.yaml to point to your actual [data_root].
+
+### 2. ScanRefer dataset
+Download [ScanRefer](https://github.com/daveredrum/ScanRefer) annotations.
+
+Put the `ScanRefer` folder in `data/`:
+```text
+data/
+└── ScanRefer/
+    ├── ScanRefer_filtered_train.json
+    ├── ScanRefer_filtered_val.json
+    ├── ScanRefer_filtered_train.txt
+    └── ScanRefer_filtered_val.txt
+```
+
+### 3. Invalid Frame List
+If you need to regenerate the invalid frame list based on your data, run:
+```bash
+python scripts/generate_invalid_scannet_list.py
+```
+
+### 4. Scene Frame Indices
+To enable target-centric sampling and ensure the model sees the referred objects during training, we use pre-computed instance-to-frame mapping:
+```text
+data/
+└── scene_frame_indices/
+    └── [scene_id].json
+```
+
+### 5. MVrefer Benchmark (mvrefer_val.json)
+This file contains frame selections for evaluation:
+```text
+data/
+└── mvrefer_val.json
+```
+## 📦 Model Weights
+
+For training and inference, you need to prepare the following weights in the `ckpts/` directory:
+
+### 1. Pi3 Weights
+The multimodal branch is initialized from [Pi3](https://huggingface.co/yyfz233/Pi3). Download and place it in:
+```text
+ckpts/
+└── Pi3/
+```
+
+### 2. RoBERTa Weights
+The model uses [RoBERTa-base](https://huggingface.co/FacebookAI/roberta-base/tree/main) as the text encoder. Download and place it in:
+```text
+ckpts/
+└── roberta-base
+```
+
+### 3. Pre-trained MVGGT (For Inference)
+Download the final MVGGT checkpoint from [Hugging Face](https://huggingface.co/sosppxo/mvggt) and update `train.resume` in `eval_mvggt.sh`.
+
+## 🚀 Training
+
+To start training on ScanRefer:
+```bash
+bash train_mvggt.sh
+```
+
+## 🔍 Inference
+
+Update the checkpoint path (train.resume) in eval_mvggt.sh, then run inference:
+```bash
+bash eval_mvggt.sh
+```
+
+## 🚀 Demo Deployment
+
+Follow these steps to deploy the interactive demo locally:
+
+### 1. Install demo dependencies
 
 Install the required packages for the demo:
 
@@ -81,20 +176,20 @@ Install the required packages for the demo:
 pip install -r requirements_demo.txt
 ```
 
-### 4. Download model weights and tokenizer
+### 2. Download model weights and tokenizer
 
 1. **Download pre-trained model weights**: Download from [Hugging Face](https://huggingface.co/sosppxo/mvggt) and update the `ckpt_path` in `demo_gradio.py` (line 608) to point to your checkpoint file.
 
 2. **Download RoBERTa tokenizer**: The demo requires RoBERTa tokenizer. Download it using:
 
 ```bash
-mkdir -p ckpts
+mkdir ckpts
 python -c "from transformers import RobertaTokenizer; RobertaTokenizer.from_pretrained('roberta-base').save_pretrained('./ckpts/roberta-base')"
 ```
 
 Or manually download from Hugging Face and place it in `./ckpts/roberta-base/`.
 
-### 5. Launch the demo
+### 3. Launch the demo
 
 Run the Gradio demo:
 
@@ -102,7 +197,7 @@ Run the Gradio demo:
 python demo_gradio.py
 ```
 
-The demo will be available at `http://localhost:7860` (or the URL shown in the terminal). You can use the `share=True` option to create a public link.
+The demo will be available at `http://localhost:7860`.
 
 ### Usage
 
@@ -120,3 +215,4 @@ If you find our work useful in your research, please consider citing:
   Title = {MVGGT: Multimodal Visual Geometry Grounded Transformer for Multiview 3D Referring Expression Segmentation},
   Year = {2026}
 }
+```

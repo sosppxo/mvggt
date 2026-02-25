@@ -1,0 +1,11 @@
+# @package _global_
+
+defaults:
+  - model: mvggt.yaml
+  - train: train_mvggt_lowres
+  - data: example.yaml
+  - general: default.yaml
+  - extras: default.yaml
+  - override hydra/job_logging: custom
+  - override hydra/job_logging: custom_color
+  - _self_

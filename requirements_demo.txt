@@ -1,15 +1,15 @@
 torch==2.5.1
 torchvision==0.20.1
 numpy==1.26.4
-pillow
+pillow==11.3.0
 opencv-python
 plyfile
-huggingface_hub
+huggingface_hub==0.35.0
 safetensors
-transformers>=4.30.0
+transformers==4.56.2
+scipy
 # below for gradio
 gradio==5.49.1
 trimesh
 matplotlib
-scipy
 spaces
