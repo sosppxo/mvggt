@@ -2,8 +2,8 @@
 
 <div align="center">
 
-**Changli Wu**<sup>1,2,†</sup>, **Haodong Wang**<sup>1,†</sup>, **Jiayi Ji**<sup>1</sup>, **Yutian Yao**<sup>5</sup>,  
-**Chunsai Du**<sup>4</sup>, **Jihua Kang**<sup>4</sup>, **Yanwei Fu**<sup>3,2</sup>, **Liujuan Cao**<sup>1,*</sup>
+**Changli Wu**<sup>1,2,†</sup>, **Haodong Wang**<sup>1,†</sup>, **Yutian Yao**<sup>5</sup>,  
+**Chunsai Du**<sup>4</sup>, **Jihua Kang**<sup>4</sup>, **Yanwei Fu**<sup>3,2</sup>, **Jiayi Ji**<sup>1,*</sup>
 
 <sup>1</sup>Xiamen University, <sup>2</sup>Shanghai Innovation Institute, <sup>3</sup>Fudan University,  
 <sup>4</sup>ByteDance, <sup>5</sup>Tianjin University of Science and Technology
@@ -14,7 +14,7 @@
 [![Project Page](https://img.shields.io/badge/Project-Website-blue.svg)](https://sosppxo.github.io/mvggt.github.io/)
 [![Demo](https://img.shields.io/badge/Demo-HuggingFace-orange.svg)](https://huggingface.co/spaces/sosppxo/mvggt)
 [![Weights](https://img.shields.io/badge/Weights-HuggingFace-yellow.svg)](https://huggingface.co/sosppxo/mvggt)
-
+[![Benchmark](https://img.shields.io/badge/Dataset-HuggingFace-green.svg)](https://huggingface.co/datasets/sosppxo/MVRefer)
 </div>
 
 ---
@@ -124,7 +124,7 @@ data/
 ```
 
 ### 5. MVrefer Benchmark (mvrefer_val.json)
-This file contains frame selections for evaluation:
+[MVrefer benchmark](https://huggingface.co/datasets/sosppxo/MVRefer) contains frame selections for evaluation:
 ```text
 data/
 └── mvrefer_val.json
@@ -211,7 +211,7 @@ If you find our work useful in your research, please consider citing:
 
 ```bibtex
 @misc{wu2026mvggt,
-  Author = {Changli Wu and Haodong Wang and Jiayi Ji and Yutian Yao and Chunsai Du and Jihua Kang and Yanwei Fu and Liujuan Cao},
+  Author = {Changli Wu and Haodong Wang and Yutian Yao and Chunsai Du and Jihua Kang and Yanwei Fu and Jiayi Ji},
   Title = {MVGGT: Multimodal Visual Geometry Grounded Transformer for Multiview 3D Referring Expression Segmentation},
   Year = {2026}
 }
