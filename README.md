@@ -2,8 +2,8 @@
 
 <div align="center">
 
-**Changli Wu**<sup>1,2,†</sup>, **Haodong Wang**<sup>1,†</sup>, **Yutian Yao**<sup>5</sup>,  
-**Chunsai Du**<sup>4</sup>, **Jihua Kang**<sup>4</sup>, **Yanwei Fu**<sup>3,2</sup>, **Jiayi Ji**<sup>1,*</sup>
+**Changli Wu**<sup>1,2,†</sup>, **Haodong Wang**<sup>1,†</sup>, **Jiayi Ji**<sup>1,*</sup>,**Yutian Yao**<sup>5</sup>,  
+**Chunsai Du**<sup>4</sup>, **Jihua Kang**<sup>4</sup>, **Yanwei Fu**<sup>3,2</sup>, **Liujuan Cao**<sup>1</sup>
 
 <sup>1</sup>Xiamen University, <sup>2</sup>Shanghai Innovation Institute, <sup>3</sup>Fudan University,  
 <sup>4</sup>ByteDance, <sup>5</sup>Tianjin University of Science and Technology
@@ -211,7 +211,7 @@ If you find our work useful in your research, please consider citing:
 
 ```bibtex
 @misc{wu2026mvggt,
-  Author = {Changli Wu and Haodong Wang and Yutian Yao and Chunsai Du and Jihua Kang and Yanwei Fu and Jiayi Ji},
+  Author = {Changli Wu and Haodong Wang and Jiayi Ji and Yutian Yao and Chunsai Du and Jihua Kang and Yanwei Fu and Liujuan Cao},
   Title = {MVGGT: Multimodal Visual Geometry Grounded Transformer for Multiview 3D Referring Expression Segmentation},
   Year = {2026}
 }
