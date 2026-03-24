@@ -1,4 +1,4 @@
-# MVGGT: Multimodal Visual Geometry Grounded Transformer for Multiview 3D Referring Expression Segmentation
+# [CVPR 2026] MVGGT: Multimodal Visual Geometry Grounded Transformer for Multiview 3D Referring Expression Segmentation
 
 <div align="center">
 
@@ -21,9 +21,11 @@
 
 ## 📢 News & Roadmap
 
-This repository is the official implementation of **MVGGT**. We are currently preparing the code and data for release. Please stay tuned!
+🎉 **[News] Our paper has been accepted to CVPR 2026!** 🎉
 
-- [x] **Release the MVRefer Benchmark** (Dataset & Evaluation scripts).
+This repository is the official implementation of **MVGGT**. All resources have been fully released. We warmly welcome everyone to try out our code, models, and the interactive demo!
+
+- [x] **Release the MVRefer Benchmark**
 - [x] **Release Training & Inference Code**.
 - [x] **Release Pre-trained Models**.
 - [x] **Release Interactive Demo Code** (Local version).
