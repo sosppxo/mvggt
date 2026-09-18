@@ -1,24 +1,25 @@
-# IntellijSpace：MVGGT 前后端应用
+# IntellijSpace: MVGGT Web Demo
 
-上传多视角图片或视频，通过自然语言进行三维目标分割、移除和家具替换，预览并下载 GLB。
-前端使用 React、Vite 和 React Three Fiber，后端使用 FastAPI。
+Upload multi-view images or a video to segment or remove objects and replace furniture in 3D scenes using natural-language instructions. Preview the results and download them as GLB files.
 
-## 目录与模型版本
+The frontend uses React, Vite, and React Three Fiber; the backend uses FastAPI.
 
-- backend/：HTTP API、任务编排、指令解析、几何编辑。
-- frontend-react/：上传、任务状态、Three.js 预览与变换交互。
-- mvggt/：本应用使用的模型源码快照。
-- example/、glb/、image/：示例图片、家具 GLB、素材图片。
-- app.py：独立 Gradio 演示及 predict_remote 接口实现。
-- backend_workspace/、models/、ckpts/：运行时生成或自行准备，不提交。
+## Directory Layout and Model Version
 
-本应用的 mvggt/models/mvggt_training.py 与仓库根目录模型版本不同，且多出
-mvggt/models/mvggt.py。因此保留完整应用模型源码，不覆盖仓库原有训练模型。
-请从本目录运行命令，或使用 run_backend.py 的文件路径启动，避免导入错误版本。
+- backend/: HTTP API, task orchestration, instruction parsing, and geometry editing.
+- frontend-react/: uploads, task status, Three.js previews, and interactive transforms.
+- mvggt/: the model source snapshot used by this application.
+- example/, glb/, image/: sample images, furniture GLB assets, and asset images.
+- app.py: the standalone Gradio demo and its predict_remote API.
+- backend_workspace/, models/, ckpts/: runtime data and locally prepared files; excluded from version control.
 
-## 安装
+The application's mvggt/models/mvggt_training.py differs from the version at the repository root, and the application also includes mvggt/models/mvggt.py. The complete application model source is therefore kept here without replacing the repository's training model.
 
-以下命令从仓库根目录执行，已创建环境时可以跳过 conda create：
+Run commands from this directory, or launch the backend using the path to run_backend.py, to ensure that the correct model version is imported.
+
+## Installation
+
+Run these commands from the repository root in PowerShell. Skip the environment creation step if the environment already exists:
 
     cd IntellijSpace
     conda create -n mvggt python=3.10 -y
@@ -26,68 +27,64 @@ mvggt/models/mvggt.py。因此保留完整应用模型源码，不覆盖仓库�
     python -m pip install -r requirements.txt
     Copy-Item .env.example .env
 
-编辑 .env，填入 MVGGT_LLM_API_KEY。默认通过 Qwen 解析自然语言。
-不提供有效密钥时，默认配置的指令解析无法正常调用。
-如只需目标分割，可把 MVGGT_LLM_API_URL 留空，此时原始文本直接作为分割目标，
-不支持自然语言识别 REMOVE / REPLACE。
-真实 .env 已被忽略，不要提交密钥。
+Edit .env and set MVGGT_LLM_API_KEY. The default configuration uses Qwen to parse natural-language instructions and requires a valid API key.
 
-requirements_demo.txt 保留原始模型和 Gradio 依赖版本；
-requirements.txt 在其基础上补充 Web 后端依赖。
-本地 GPU 推理需要匹配驱动的 CUDA 版 PyTorch（本项目固定 torch 2.5.1 /
-torchvision 0.20.1）。安装后检查：
+For segmentation only, leave MVGGT_LLM_API_URL empty. The raw prompt will then be used directly as the segmentation target, without interpreting REMOVE or REPLACE instructions.
+
+The actual .env file is ignored by Git. Do not commit credentials.
+
+requirements_demo.txt preserves the original model and Gradio dependency versions. requirements.txt adds the web backend dependencies.
+
+Local GPU inference requires a CUDA-enabled PyTorch build compatible with your driver. This project pins torch 2.5.1 and torchvision 0.20.1. Check the installation with:
 
     python -c "import torch; print(torch.__version__); print(torch.cuda.is_available())"
 
-## 启动前后端
+## Running the Backend and Frontend
 
-在本目录运行后端：
+Start the backend from this directory:
 
     conda activate mvggt
     python run_backend.py
 
-API 文档：http://127.0.0.1:8001/docs
-健康检查：http://127.0.0.1:8001/api/v1/health
+- API documentation: http://127.0.0.1:8001/docs
+- Health check: http://127.0.0.1:8001/api/v1/health
 
-另开终端，在本目录运行：
+Open another terminal in this directory and start the frontend:
 
     cd frontend-react
     npm ci
     npm run dev
 
-浏览器打开 http://localhost:5173。Vite 将 /api/v1 代理到本机 8001 端口。
-Node.js 版本要求：20.19+（20.x）或 22.12+；具体以锁定的 Vite engines 为准。
+Open http://localhost:5173. Vite proxies /api/v1 requests to the backend on local port 8001.
 
-生产静态文件可用 npm run build 生成；Vite 开发代理不属于生产部署，
-部署时需另外配置 /api/v1 反向代理或设置 VITE_API_BASE。
-前端 API 地址也支持 URL 参数 api_base 和 localStorage.MVGGT_API_BASE。
+Use Node.js 20.19+ within the 20.x series, or Node.js 22.12 and later, as required by the locked Vite version's engines field.
 
-## 推理与模型准备
+Run npm run build from frontend-react/ to generate production static files. The Vite development proxy is not part of the production build; configure an /api/v1 reverse proxy or set VITE_API_BASE for deployment. The frontend also accepts the api_base URL parameter and localStorage.MVGGT_API_BASE.
 
-- local：本地 PyTorch 推理，需足够显存及完整模型权重。
-- hf_api：调用配置的 Hugging Face Space；依赖远端运行状态、额度及接口一致性。
-- auto：后端根据本地 GPU 状态选择。
+## Inference and Model Setup
 
-即使使用远程模式，当前后端仍需安装模型相关 Python 依赖。
-本地权重优先读取 MVGGT_LOCAL_MODEL_PATH；不存在时从配置的 Hugging Face
-仓库下载到模型缓存目录。Tokenizer 优先读取 MVGGT_TOKENIZER_PATH，
-不存在时使用 roberta-base。模型文本编码器也可能需要下载 Hugging Face 文件。
-本仓库不包含权重；首次运行可能需要网络和较长下载时间。
-后端检测到本地 GPU 时会尝试启动预热，可能触发下载；预热失败会记录警告。
+- local: local PyTorch inference; requires sufficient GPU memory and complete model weights.
+- hf_api: calls the configured Hugging Face Space; depends on remote availability, quotas, and API compatibility.
+- auto: selects a backend based on the local GPU status.
 
-前端支持 result / nomask / mask 结果切换。
-替换素材的旋转、缩放在浏览器实时预览，下载时调用 dynamic 接口导出。
+The current backend requires the model-related Python dependencies even when using remote inference.
 
-## 独立 Gradio 演示
+Local inference first checks MVGGT_LOCAL_MODEL_PATH. If the weights are missing, it downloads them from the configured Hugging Face repository into the model cache directory. The tokenizer first checks MVGGT_TOKENIZER_PATH and falls back to roberta-base. The model's text encoder may also need to download files from Hugging Face.
+
+Model weights are not included. The first run may require network access and a lengthy download. When a local GPU is detected, the backend attempts to warm up the model at startup, which may trigger downloads. Warmup failures are logged as warnings.
+
+The frontend supports switching between result, nomask, and mask outputs. Rotation and scaling of replacement assets are previewed in the browser; downloading calls the dynamic endpoint to export the transformed result.
+
+## Standalone Gradio Demo
+
+Run from this directory:
 
     python app.py
 
-此入口独立于 FastAPI，启动时加载模型，推理需要 CUDA。
-它保留原演示的模型下载及路径行为，不读取 FastAPI 的 .env 配置；
-请从本目录启动。predict_remote 是配套远程调用接口。
+This entry point runs independently of FastAPI, loads the model at startup, and requires CUDA for inference. It retains the original demo's model download and path behavior and does not read the FastAPI .env configuration. Its predict_remote endpoint provides the corresponding remote inference API.
 
-## 提交范围
+## Version Control and Runtime Limitations
 
-提交源码、依赖清单、前端锁文件和小型示例素材。
-不提交 node_modules、dist、模型权重、上传文件、任务结果、Python 缓存和密钥。
-此应用当前使用内存任务记录和后台线程，适合演示；重启后无法恢复任务查询。
+Commit source code, dependency manifests, the frontend lockfile, and small sample assets. Exclude node_modules, dist, model weights, uploaded files, task outputs, Python caches, and credentials.
+
+The application currently uses in-memory task records and background threads for demonstration purposes. Task queries cannot be restored after a backend restart.
