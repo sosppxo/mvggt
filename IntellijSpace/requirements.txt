@@ -1,0 +1,7 @@
+-r requirements_demo.txt
+fastapi
+uvicorn[standard]
+python-multipart
+python-dotenv
+pydantic>=2,<3
+gradio_client

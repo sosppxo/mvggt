@@ -21,6 +21,8 @@
 
 ## 📢 News & Roadmap
 
+🎉 **[News] The IntellijSpace web demo is now released!** Upload images or videos to reconstruct and edit 3D scenes with natural-language segmentation, object removal, and furniture replacement. See the [IntellijSpace Demo Guide](IntellijSpace/README.md) for installation, configuration, and frontend/backend startup instructions.
+
 🎉 **[News] Our paper has been accepted to CVPR 2026!** 🎉
 
 This repository is the official implementation of **MVGGT**. All resources have been fully released. We warmly welcome everyone to try out our code, models, and the interactive demo!
@@ -29,6 +31,7 @@ This repository is the official implementation of **MVGGT**. All resources have 
 - [x] **Release Training & Inference Code**.
 - [x] **Release Pre-trained Models**.
 - [x] **Release Interactive Demo Code** (Local version).
+- [x] **Release IntellijSpace Web Demo** (React frontend + FastAPI backend). [Documentation](IntellijSpace/README.md).
 
 ---
 
