@@ -1,5 +1,7 @@
 # [CVPR 2026] MVGGT: Multimodal Visual Geometry Grounded Transformer for Multiview 3D Referring Expression Segmentation
 
+From Shanghai Innovation Institute, Xiamen University, Fudan University, ByteDance and Tianjin University of Science and Technology
+
 <div align="center">
 
 **Changli Wu**<sup>1,2,†</sup>, **Haodong Wang**<sup>1,†</sup>, **Jiayi Ji**<sup>1,*</sup>,**Yutian Yao**<sup>5</sup>,  
